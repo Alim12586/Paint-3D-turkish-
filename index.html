@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Paint 3D - Basit Örnek</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      background: #d2d3d7;
+    }
+    .topbar {
+      background: linear-gradient(90deg, #3a4b5c 90%, #495a6c 100%);
+      color: #fff;
+      padding: 10px 0 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 20px;
+      padding: 10px 30px;
+      background: #495a6c;
+      color: #fff;
+    }
+    .toolbar .active {
+      background: #4e6ca9;
+      border-radius: 3px;
+      padding: 2px 8px;
+    }
+    .control-row {
+      background: #ebeaea;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .canvas-container {
+      display: flex;
+      margin: 0 auto;
+      background: #d2d3d7;
+      justify-content: center;
+      align-items: center;
+      height: 60vh;
+    }
+    #canvas3d {
+      background: #fff;
+      border: 2px solid #cccccc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .sidebar {
+      position: absolute;
+      top: 110px;
+      right: 30px;
+      width: 220px;
+      background: #f7f7f7;
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.09);
+    }
+    .sidebar h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #4e6ca9;
+    }
+    .shape-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .shape-btn {
+      background: #e6eafd;
+      border: 1px solid #b5c7ee;
+      border-radius: 5px;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      font-size: 22px;
+      transition: background 0.2s;
+    }
+    .shape-btn:hover {
+      background: #d2e3fd;
+    }
+    .color-row {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .color-box {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      cursor: pointer;
+      transition: border 0.15s;
+    }
+    .color-box.selected {
+      border: 2px solid #4e6ca9;
+    }
+    .material-select {
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 5px;
+    }
+    .add-color-btn {
+      background: #d2e3fd;
+      border: 1px solid #b5c7ee;
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: pointer;
+      margin-left: 2px;
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: static; width: 100%; margin-bottom: 30px; }
+      .canvas-container { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div style="padding: 0 30px; display: flex; align-items: center; gap: 24px;">
+      <span>Menü</span>
+      <span>Fırçalar</span>
+      <span>2B şekiller</span>
+      <span class="active">3B şekiller</span>
+      <span>Çıkartma...</span>
+      <span>Metin</span>
+      <span>Efektler</span>
+      <span>Tuval</span>
+      <span>3B kitaplık...</span>
+    </div>
+    <div style="background: #fee2e3; color: #8a6a6a; padding: 7px 30px; font-size: 15px;">
+      Paint 3D, 4 Kasım 2024'ten itibaren Microsoft Store'da kullanılamayacak veya gelecekteki güncellemeleri almayacaktır.
+      <a href="#" style="color: #4e6ca9;">Daha fazla bilgi edinin</a>
+    </div>
+  </div>
+
+  <div class="control-row">
+    <button>Seç</button>
+    <button>Kırp</button>
+    <button>Sihirli Seçim</button>
+    <span style="margin-left: auto;">3B görünüm</span>
+    <input type="range" min="50" max="150" value="100" id="zoom" style="width: 110px;">
+    <span id="zoomLabel">100%</span>
+  </div>
+
+  <div class="canvas-container" style="position: relative;">
+    <canvas id="canvas3d" width="820" height="420"></canvas>
+    <div class="sidebar">
+      <h3>3B Şekiller</h3>
+      <div class="shape-list">
+        <div class="shape-btn" title="Kıvrım" onclick="drawShape('curve')">🌈</div>
+        <div class="shape-btn" title="Serbest" onclick="drawShape('free')">✎</div>
+        <div class="shape-btn" title="Küçük Top" onclick="drawShape('sphere')">⚪</div>
+        <div class="shape-btn" title="Küp" onclick="drawShape('cube')">🟦</div>
+        <div class="shape-btn" title="Silindir" onclick="drawShape('cylinder')">🟫</div>
+        <div class="shape-btn" title="Konik" onclick="drawShape('cone')">🔺</div>
+        <div class="shape-btn" title="Prizma" onclick="drawShape('prism')">🔶</div>
+        <div class="shape-btn" title="Torus" onclick="drawShape('torus')">🌀</div>
+      </div>
+      <select class="material-select" id="material">
+        <option value="mat">Mat</option>
+        <option value="glossy">Parlak</option>
+      </select>
+      <div class="color-row" id="colorRow">
+        <div class="color-box" style="background:#aaf8fc" onclick="selectColor('#aaf8fc')"></div>
+        <div class="color-box" style="background:#fff" onclick="selectColor('#fff')"></div>
+        <div class="color-box" style="background:#d2d3d7" onclick="selectColor('#d2d3d7')"></div>
+        <div class="color-box" style="background:#000" onclick="selectColor('#000')"></div>
+        <div class="color-box" style="background:#e5e73b" onclick="selectColor('#e5e73b')"></div>
+        <div class="color-box" style="background:#e71e1e" onclick="selectColor('#e71e1e')"></div>
+        <div class="color-box" style="background:#2bd621" onclick="selectColor('#2bd621')"></div>
+        <div class="color-box" style="background:#e7e7e7" onclick="selectColor('#e7e7e7')"></div>
+        <div class="color-box" style="background:#ffed00" onclick="selectColor('#ffed00')"></div>
+        <div class="color-box" style="background:#e646fd" onclick="selectColor('#e646fd')"></div>
+      </div>
+      <button class="add-color-btn" onclick="addColor()">+ Renk ekle</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas3d');
+    const ctx = canvas.getContext('2d');
+    let currentColor = '#aaf8fc';
+    let currentMaterial = 'mat';
+    let drawingMode = null;
+
+    // Material simulation (just a visual effect)
+    function getMaterialStyle(color) {
+      if (currentMaterial === 'mat') return color;
+      // "Glossy" effect: simple gradient
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, "#fff");
+      grad.addColorStop(0.8, color);
+      return grad;
+    }
+
+    function selectColor(color) {
+      currentColor = color;
+      document.querySelectorAll('.color-box').forEach(box => {
+        box.classList.toggle('selected', box.style.background === color);
+      });
+    }
+
+    document.getElementById('material').onchange = function() {
+      currentMaterial = this.value;
+    };
+
+    function addColor() {
+      const color = prompt("Yeni renk kodunu girin (örn: #ff0000):", "#");
+      if (color && /^#[0-9a-fA-F]{6}$/.test(color)) {
+        const box = document.createElement("div");
+        box.className = "color-box";
+        box.style.background = color;
+        box.onclick = function() { selectColor(color); };
+        document.getElementById('colorRow').appendChild(box);
+      }
+    }
+
+    // Drawing shapes
+    function drawShape(shape) {
+      if (shape === 'cube') {
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fillRect(100, 100, 70, 70);
+        ctx.strokeRect(100, 100, 70, 70);
+      } else if (shape === 'sphere') {
+        ctx.beginPath();
+        ctx.arc(230, 135, 35, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fill();
+        ctx.stroke();
+      } else if (shape === 'cylinder') {
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fillRect(320, 100, 40, 80);
+        ctx.beginPath();
+        ctx.ellipse(340, 100, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#c1c1c1";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(340, 180, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#c1c1c1";
+        ctx.fill();
+      } else if (shape === 'cone') {
+        ctx.beginPath();
+        ctx.moveTo(410, 190);
+        ctx.lineTo(450, 100);
+        ctx.lineTo(490, 190);
+        ctx.closePath();
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fill();
+        ctx.stroke();
+      } else if (shape === 'prism') {
+        ctx.beginPath();
+        ctx.moveTo(550, 170);
+        ctx.lineTo(580, 100);
+        ctx.lineTo(610, 170);
+        ctx.closePath();
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillRect(580, 170, 30, 40);
+      } else if (shape === 'torus') {
+        ctx.beginPath();
+        ctx.arc(700, 130, 30, 0, Math.PI * 2);
+        ctx.arc(700, 130, 16, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.fillStyle = getMaterialStyle(currentColor);
+        ctx.fill();
+        ctx.stroke();
+      } else if (shape === 'curve') {
+        ctx.strokeStyle = currentColor;
+        ctx.beginPath();
+        ctx.moveTo(180, 300);
+        ctx.quadraticCurveTo(220, 250, 350, 320);
+        ctx.stroke();
+      } else if (shape === 'free') {
+        drawingMode = 'free';
+      }
+    }
+
+    // Free draw
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    canvas.addEventListener('mousedown', function(e) {
+      if (drawingMode === 'free') {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+      }
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if (isDrawing && drawingMode === 'free') {
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+      }
+    });
+    canvas.addEventListener('mouseup', function() {
+      isDrawing = false;
+      drawingMode = null;
+    });
+
+    // Zoom
+    document.getElementById('zoom').oninput = function() {
+      const val = this.value;
+      document.getElementById('zoomLabel').innerText = val + "%";
+      canvas.style.width = (820 * val/100) + "px";
+      canvas.style.height = (420 * val/100) + "px";
+    };
+  </script>
+</body>
+</html>
